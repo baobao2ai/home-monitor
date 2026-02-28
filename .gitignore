@@ -1,0 +1,9 @@
+.env
+frigate/config.yml
+storage/
+logs/
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+mqtt/data/

@@ -1,0 +1,140 @@
+# Frigate NVR Configuration
+# Copy to config.yml and fill in your camera RTSP URLs
+# Full docs: https://docs.frigate.video/configuration/
+
+mqtt:
+  enabled: false   # Set to true if using Home Assistant
+
+# ── DETECTOR (NVIDIA GPU) ────────────────────────────────
+detectors:
+  tensorrt:
+    type: tensorrt
+    device: 0   # GPU index (0 = first GPU = your 4090)
+
+model:
+  path: /config/model_cache/tensorrt/yolov7-tiny-416.trt
+  input_tensor: nchw
+  input_pixel_format: rgb
+  width: 416
+  height: 416
+
+# ── CAMERAS ──────────────────────────────────────────────
+cameras:
+  # --- HOME ---
+  front_door:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:{FRIGATE_RTSP_PASSWORD}@192.168.1.101:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1920
+      height: 1080
+      fps: 5
+    zones:
+      driveway:
+        coordinates: 0,1080,960,1080,960,400,0,400
+      front_path:
+        coordinates: 960,1080,1920,1080,1920,400,960,400
+
+  back_yard:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:{FRIGATE_RTSP_PASSWORD}@192.168.1.102:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1920
+      height: 1080
+      fps: 5
+
+  # --- OFFICE ---
+  office_entrance:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:{FRIGATE_RTSP_PASSWORD}@192.168.1.103:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1920
+      height: 1080
+      fps: 5
+
+  office_main:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:{FRIGATE_RTSP_PASSWORD}@192.168.1.104:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      width: 1920
+      height: 1080
+      fps: 5
+
+# ── OBJECT DETECTION ─────────────────────────────────────
+objects:
+  track:
+    - person
+    - car
+    - dog
+    - cat
+    - bicycle
+    - motorcycle
+  filters:
+    person:
+      min_area: 2000       # Ignore tiny blobs
+      max_area: 100000
+      min_score: 0.6       # 60% confidence minimum
+      threshold: 0.7
+    car:
+      min_area: 5000
+      min_score: 0.6
+
+# ── RECORDING ────────────────────────────────────────────
+record:
+  enabled: true
+  retain:
+    days: 3              # Keep 3 days of continuous recordings
+    mode: motion         # Only record when motion detected
+  events:
+    retain:
+      default: 30        # Keep event clips for 30 days
+      mode: active_objects
+
+# ── SNAPSHOTS ────────────────────────────────────────────
+snapshots:
+  enabled: true
+  timestamp: true
+  bounding_box: true
+  retain:
+    default: 30
+
+# ── MOTION ───────────────────────────────────────────────
+motion:
+  threshold: 30
+  contour_area: 100
+  frame_alpha: 0.01
+  frame_height: 50
+  improve_contrast: true
+
+# ── CLIPS STORAGE ────────────────────────────────────────
+clips:
+  retain:
+    default: 30
+
+# ── TIMESTAMP OVERLAY ────────────────────────────────────
+timestamp_style:
+  position: tl
+  format: "%m/%d/%Y %H:%M:%S"
+  color:
+    red: 255
+    green: 255
+    blue: 255

@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  frigate:
+    container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable
+    privileged: true
+    restart: unless-stopped
+
+    # NVIDIA GPU passthrough
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    shm_size: "256mb"   # Increase if using many cameras
+
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./frigate/config.yml:/config/config.yml
+      - ./storage/clips:/media/frigate/clips
+      - ./storage/recordings:/media/frigate/recordings
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000   # 1GB tmpfs for fast frame cache
+
+    ports:
+      - "5000:5000"    # Frigate web UI
+      - "8554:8554"    # RTSP re-stream output
+      - "8555:8555/tcp"  # WebRTC
+      - "8555:8555/udp"
+
+    environment:
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD:-changeme}
+
+    env_file:
+      - .env
+
+  # Optional: MQTT broker (for Home Assistant integration)
+  mqtt:
+    container_name: mqtt
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - ./mqtt/data:/mosquitto/data
+    profiles:
+      - homeassistant  # Only starts with: docker compose --profile homeassistant up
