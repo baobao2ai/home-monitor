@@ -8,7 +8,7 @@ mqtt:
 # ── DETECTOR (NVIDIA GPU) ────────────────────────────────
 detectors:
   tensorrt:
-    type: tensorrt
+    type: cpu  # Switch to tensorrt after GPU model setup
     device: 0   # GPU index (0 = first GPU = your 4090)
 
 model:
