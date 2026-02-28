@@ -77,3 +77,18 @@ home-monitor/
 - [ ] Docker installed on host
 - [ ] Cameras purchased & mounted
 - [ ] Live stream configured
+
+---
+
+## Live Status
+
+| Component | Status |
+|-----------|--------|
+| Docker | ✅ Installed (v29.2.1) |
+| NVIDIA Container Toolkit | ✅ Configured |
+| Frigate NVR | ✅ Running on http://localhost:5000 |
+| CPU Detector | ✅ Active (TensorRT pending model build) |
+| Daily digest cron | ✅ 11 PM every day |
+| Storage manager cron | ✅ Midnight every day |
+| Python venv | ✅ `home-monitor/venv/` |
+| Cameras | ⏳ Pending hardware purchase |
