@@ -1,94 +1,74 @@
-# 🏠 Home & Office AI Monitoring System
+# 🏠 Home Monitor
 
-AI-powered motion detection for home and office cameras. Detects people, animals, and vehicles — compiles daily highlight clips and sends them to Discord.
+Wyze camera event monitoring — polls Wyze cloud API and forwards motion events with thumbnails to Discord.
 
-**Stack:** Frigate NVR · NVIDIA GPU · Docker · ffmpeg · Python
+**Stack:** Python · Wyze SDK · Discord Webhooks · cron
+
+---
+
+## Architecture
+
+```
+Wyze Cam V4 → Wyze Cloud → wyze_discord_forwarder.py → Discord
+```
+
+No local NVR needed. Events and thumbnails pulled directly from Wyze's API.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Install Docker (requires sudo — run once)
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER   # add yourself to docker group
-newgrp docker                   # apply without logout
-
-# 2. Clone this repo
 git clone https://github.com/baobao2ai/home-monitor.git
 cd home-monitor
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
 
-# 3. Edit your config
-cp frigate/config.example.yml frigate/config.yml
-# → Edit frigate/config.yml with your camera RTSP URLs
-
-# 4. Set your Discord webhook
 cp .env.example .env
-# → Edit .env with DISCORD_WEBHOOK_URL
+# Edit .env with your credentials
 
-# 5. Launch everything
-docker compose up -d
+# Test
+venv/bin/python scripts/wyze_discord_forwarder.py --dry-run
 
-# 6. Open Frigate dashboard
-open http://localhost:5000
+# Install cron (runs every 5 min)
+REPO=$(pwd)
+(crontab -l 2>/dev/null; echo "*/5 * * * * cd $REPO && $REPO/venv/bin/python scripts/wyze_discord_forwarder.py >> $REPO/logs/wyze_forwarder.log 2>&1") | crontab -
 ```
 
 ---
 
-## Repository Structure
+## Files
 
 ```
 home-monitor/
-├── docker-compose.yml          # Full stack: Frigate + GPU
-├── .env.example                # Environment variables template
-├── frigate/
-│   ├── config.example.yml      # Frigate camera + detection config
-│   └── config.yml              # Your config (gitignored)
 ├── scripts/
-│   ├── daily_digest.py         # Compile + send daily clip digest
-│   ├── storage_manager.py      # Auto-delete old clips
-│   ├── test_stream.sh          # Test with phone camera (IP Webcam)
-│   └── install_docker.sh       # One-command Docker install
-└── docs/
-    ├── setup.md                # Full setup guide
-    ├── cameras.md              # Camera placement & config guide
-    └── troubleshooting.md      # Common issues & fixes
+│   └── wyze_discord_forwarder.py   # Main script
+├── docs/
+│   ├── setup.md                    # Full setup guide
+│   ├── wifi-hotspot.md             # Hotspot setup (no-router env)
+│   └── troubleshooting.md          # Common issues
+├── logs/                           # Runtime logs (gitignored)
+├── .env.example                    # Config template
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## Hardware Requirements
+## .env Configuration
 
-| Item | Recommended | Notes |
-|------|-------------|-------|
-| GPU | NVIDIA RTX 4090 | Already installed ✅ |
-| Cameras | Reolink RLC-810A | 4x PoE, 4K |
-| Switch | TP-Link TL-SG1008P | 8-port PoE |
-| Storage | 4TB HDD | ~60 days of clips |
+```env
+WYZE_EMAIL=your@email.com
+WYZE_PASSWORD=yourpassword
+WYZE_KEY_ID=your-key-id          # From developer-api-console.wyze.com
+WYZE_API_KEY=your-api-key
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
 
-## Current Status
-
-- [x] Repository structure
-- [x] Docker Compose config (GPU passthrough)
-- [x] Frigate config template
-- [x] Daily digest script
-- [x] Storage manager
-- [x] Test stream helper
-- [ ] Docker installed on host
-- [ ] Cameras purchased & mounted
-- [ ] Live stream configured
+Get Wyze API keys at: https://developer-api-console.wyze.com
 
 ---
 
-## Live Status
+## Network Setup (No-Router Environment)
 
-| Component | Status |
-|-----------|--------|
-| Docker | ✅ Installed (v29.2.1) |
-| NVIDIA Container Toolkit | ✅ Configured |
-| Frigate NVR | ✅ Running on http://localhost:5000 |
-| CPU Detector | ✅ Active (TensorRT pending model build) |
-| Daily digest cron | ✅ 11 PM every day |
-| Storage manager cron | ✅ Midnight every day |
-| Python venv | ✅ `home-monitor/venv/` |
-| Cameras | ⏳ Pending hardware purchase |
+See `docs/wifi-hotspot.md` for connecting the camera via a machine-hosted WiFi hotspot with internet sharing.
